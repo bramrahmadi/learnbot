@@ -10,8 +10,10 @@ test.describe("Authentication", () => {
 
   test("landing page has navigation links", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Get started" })).toBeVisible();
+    // Use the navbar to scope the selector to avoid strict mode violations
+    const nav = page.getByRole("navigation");
+    await expect(nav.getByRole("link", { name: "Sign in" })).toBeVisible();
+    await expect(nav.getByRole("link", { name: "Get started" })).toBeVisible();
   });
 
   test("register page loads", async ({ page }) => {
@@ -69,6 +71,7 @@ test.describe("Authentication", () => {
 
   test("register page has link to login", async ({ page }) => {
     await page.goto("/register");
-    await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
+    // Use first() to avoid strict mode violation (Sign in appears in navbar and form)
+    await expect(page.getByRole("link", { name: "Sign in" }).first()).toBeVisible();
   });
 });
