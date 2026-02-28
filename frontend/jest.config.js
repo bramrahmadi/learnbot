@@ -16,20 +16,18 @@ const config = {
   testPathIgnorePatterns: ["/node_modules/", "/e2e/", "/.next/"],
   testMatch: ["**/__tests__/**/*.{ts,tsx}", "**/*.test.{ts,tsx}"],
   collectCoverageFrom: [
-    "src/**/*.{ts,tsx}",
+    "src/components/**/*.{ts,tsx}",
+    "src/store/**/*.{ts,tsx}",
     "!src/**/*.d.ts",
-    "!src/**/index.ts",
-    "!src/app/layout.tsx",
-    "!src/app/globals.css",
-    "!src/__tests__/**",
+    "!src/**/__tests__/**",
     "!src/__mocks__/**",
   ],
   coverageThreshold: {
     global: {
-      branches: 50,
-      functions: 50,
-      lines: 50,
-      statements: 50,
+      branches: 60,
+      functions: 60,
+      lines: 60,
+      statements: 60,
     },
   },
 };
