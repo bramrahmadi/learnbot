@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LearnBot API Documentation</title>
+  <meta name="description" content="LearnBot API Documentation — AI-powered career development platform REST API reference" />
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-dark: #3730a3;
+      --success: #059669;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --font-mono: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: var(--gray-800);
+      background: var(--gray-50);
+      line-height: 1.6;
+    }
+
+    /* Layout */
+    .layout { display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: var(--gray-900);
+      color: #e5e7eb;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      overflow-y: auto;
+      padding: 0;
+      z-index: 100;
+    }
+
+    .sidebar-header {
+      padding: 24px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .sidebar-header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: white;
+    }
+
+    .sidebar-header .version {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+
+    .sidebar-nav { padding: 16px 0; }
+
+    .nav-section {
+      padding: 8px 20px 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #6b7280;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 20px;
+      color: #d1d5db;
+      text-decoration: none;
+      font-size: 14px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .nav-link:hover { background: rgba(255,255,255,0.05); color: white; }
+    .nav-link.active { background: rgba(79,70,229,0.3); color: white; border-left: 3px solid var(--primary); }
+
+    .method-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: var(--font-mono);
+    }
+
+    .method-get { background: #065f46; color: #6ee7b7; }
+    .method-post { background: #1e3a5f; color: #93c5fd; }
+    .method-put { background: #78350f; color: #fcd34d; }
+    .method-delete { background: #7f1d1d; color: #fca5a5; }
+
+    /* Main content */
+    .main {
+      margin-left: 280px;
+      flex: 1;
+      padding: 0;
+    }
+
+    /* Top bar */
+    .topbar {
+      background: white;
+      border-bottom: 1px solid var(--gray-200);
+      padding: 16px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .topbar-title { font-size: 20px; font-weight: 700; color: var(--gray-900); }
+    .topbar-subtitle { font-size: 14px; color: var(--gray-600); margin-top: 2px; }
+
+    .base-url {
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--gray-700);
+    }
+
+    /* Content */
+    .content { padding: 40px; max-width: 900px; }
+
+    /* Sections */
+    .section { margin-bottom: 60px; }
+
+    .section-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: 8px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--gray-200);
+    }
+
+    .section-desc {
+      color: var(--gray-600);
+      margin-bottom: 24px;
+      font-size: 15px;
+    }
+
+    /* Endpoint cards */
+    .endpoint {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .endpoint-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s;
+    }
+
+    .endpoint-header:hover { background: var(--gray-50); }
+
+    .endpoint-method {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .endpoint-path {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--gray-900);
+      flex: 1;
+    }
+
+    .endpoint-summary {
+      font-size: 14px;
+      color: var(--gray-600);
+    }
+
+    .auth-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+
+    .endpoint-body {
+      border-top: 1px solid var(--gray-200);
+      padding: 20px;
+      display: none;
+    }
+
+    .endpoint-body.open { display: block; }
+
+    /* Code blocks */
+    .code-block {
+      background: var(--gray-900);
+      color: #e5e7eb;
+      border-radius: 6px;
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      overflow-x: auto;
+      margin: 12px 0;
+      line-height: 1.5;
+    }
+
+    .code-block .comment { color: #6b7280; }
+    .code-block .key { color: #93c5fd; }
+    .code-block .string { color: #6ee7b7; }
+    .code-block .number { color: #fcd34d; }
+    .code-block .bool { color: #f9a8d4; }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin: 12px 0;
+    }
+
+    th {
+      background: var(--gray-100);
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--gray-700);
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--gray-100);
+      color: var(--gray-700);
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    td code, th code {
+      background: var(--gray-100);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--primary);
+    }
+
+    /* Labels */
+    .label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--gray-600);
+      margin-bottom: 8px;
+      margin-top: 16px;
+    }
+
+    /* Response codes */
+    .response-codes { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+
+    .response-code {
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+    }
+
+    .response-2xx { background: #d1fae5; color: #065f46; }
+    .response-4xx { background: #fee2e2; color: #991b1b; }
+    .response-5xx { background: #fef3c7; color: #92400e; }
+
+    /* Info boxes */
+    .info-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 14px;
+      color: #1e40af;
+      margin: 12px 0;
+    }
+
+    .warning-box {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 14px;
+      color: #92400e;
+      margin: 12px 0;
+    }
+
+    /* Error codes table */
+    .error-table td:first-child { font-family: var(--font-mono); font-size: 12px; }
+
+    /* Chevron */
+    .chevron {
+      width: 16px;
+      height: 16px;
+      transition: transform 0.2s;
+      color: var(--gray-400);
+    }
+
+    .endpoint-header.open .chevron { transform: rotate(90deg); }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .content { padding: 20px; }
+      .topbar { padding: 16px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <h1>LearnBot API</h1>
+      <div class="version">v1.0.0 · REST API</div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-section">Overview</div>
+      <a href="#overview" class="nav-link">Introduction</a>
+      <a href="#authentication" class="nav-link">Authentication</a>
+      <a href="#rate-limiting" class="nav-link">Rate Limiting</a>
+      <a href="#errors" class="nav-link">Error Codes</a>
+
+      <div class="nav-section" style="margin-top:12px">Endpoints</div>
+      <a href="#auth-endpoints" class="nav-link">
+        <span class="method-badge method-post">POST</span> Auth
+      </a>
+      <a href="#profile-endpoints" class="nav-link">
+        <span class="method-badge method-get">GET</span> Profile
+      </a>
+      <a href="#resume-endpoints" class="nav-link">
+        <span class="method-badge method-post">POST</span> Resume
+      </a>
+      <a href="#jobs-endpoints" class="nav-link">
+        <span class="method-badge method-get">GET</span> Jobs
+      </a>
+      <a href="#analysis-endpoints" class="nav-link">
+        <span class="method-badge method-post">POST</span> Analysis
+      </a>
+      <a href="#training-endpoints" class="nav-link">
+        <span class="method-badge method-get">GET</span> Training
+      </a>
+      <a href="#resources-endpoints" class="nav-link">
+        <span class="method-badge method-get">GET</span> Resources
+      </a>
+      <a href="#health-endpoints" class="nav-link">
+        <span class="method-badge method-get">GET</span> Health
+      </a>
+
+      <div class="nav-section" style="margin-top:12px">Resources</div>
+      <a href="../API.md" class="nav-link">Full API Docs (Markdown)</a>
+      <a href="../../api-gateway/docs/openapi.yaml" class="nav-link">OpenAPI Spec (YAML)</a>
+      <a href="../../api-gateway/docs/learnbot.postman_collection.json" class="nav-link">Postman Collection</a>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">LearnBot API Documentation</div>
+        <div class="topbar-subtitle">AI-Powered Career Development Platform</div>
+      </div>
+      <div class="base-url">http://localhost:8090</div>
+    </div>
+
+    <div class="content">
+
+      <!-- Overview -->
+      <section class="section" id="overview">
+        <h2 class="section-title">Introduction</h2>
+        <p class="section-desc">
+          The LearnBot API is a RESTful HTTP API providing access to all platform features:
+          user authentication, profile management, resume parsing, job matching, skill gap analysis,
+          and personalized training recommendations.
+        </p>
+
+        <div class="label">Base URLs</div>
+        <table>
+          <tr><th>Environment</th><th>URL</th></tr>
+          <tr><td>Local Development</td><td><code>http://localhost:8090</code></td></tr>
+          <tr><td>Staging</td><td><code>https://api-staging.learnbot.example.com</code></td></tr>
+          <tr><td>Production</td><td><code>https://api.learnbot.example.com</code></td></tr>
+        </table>
+
+        <div class="label">Response Format</div>
+        <p style="font-size:14px;color:var(--gray-600);margin-bottom:8px">All responses use a consistent JSON envelope:</p>
+        <div class="code-block"><span class="comment">// Success</span>
+{
+  <span class="key">"success"</span>: <span class="bool">true</span>,
+  <span class="key">"data"</span>: { ... },
+  <span class="key">"meta"</span>: { <span class="key">"total"</span>: <span class="number">100</span>, <span class="key">"limit"</span>: <span class="number">20</span>, <span class="key">"offset"</span>: <span class="number">0</span> }
+}
+
+<span class="comment">// Error</span>
+{
+  <span class="key">"success"</span>: <span class="bool">false</span>,
+  <span class="key">"error"</span>: {
+    <span class="key">"code"</span>: <span class="string">"VALIDATION_ERROR"</span>,
+    <span class="key">"message"</span>: <span class="string">"request validation failed"</span>,
+    <span class="key">"details"</span>: [{ <span class="key">"field"</span>: <span class="string">"email"</span>, <span class="key">"message"</span>: <span class="string">"must be a valid email"</span> }]
+  }
+}</div>
+      </section>
+
+      <!-- Authentication -->
+      <section class="section" id="authentication">
+        <h2 class="section-title">Authentication</h2>
+        <p class="section-desc">
+          Most endpoints require a JWT Bearer token obtained via <code>/api/auth/login</code> or
+          <code>/api/auth/register</code>.
+        </p>
+
+        <div class="label">Usage</div>
+        <div class="code-block">Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</div>
+
+        <div class="label">Token Details</div>
+        <table>
+          <tr><th>Property</th><th>Value</th></tr>
+          <tr><td>Algorithm</td><td><code>HS256</code></td></tr>
+          <tr><td>Expiry</td><td>24 hours</td></tr>
+          <tr><td>Claims</td><td><code>sub</code> (user ID), <code>email</code>, <code>exp</code>, <code>iat</code></td></tr>
+        </table>
+
+        <div class="info-box">
+          🔒 Endpoints marked with <span class="auth-badge">🔑 Auth Required</span> require a valid Bearer token.
+        </div>
+      </section>
+
+      <!-- Rate Limiting -->
+      <section class="section" id="rate-limiting">
+        <h2 class="section-title">Rate Limiting</h2>
+        <table>
+          <tr><th>Property</th><th>Value</th></tr>
+          <tr><td>Rate</td><td>10 requests/second per IP</td></tr>
+          <tr><td>Burst</td><td>30 requests</td></tr>
+          <tr><td>Algorithm</td><td>Token bucket</td></tr>
+          <tr><td>Exceeded response</td><td><code>429 Too Many Requests</code></td></tr>
+        </table>
+      </section>
+
+      <!-- Auth Endpoints -->
+      <section class="section" id="auth-endpoints">
+        <h2 class="section-title">Authentication</h2>
+        <p class="section-desc">User registration and login endpoints.</p>
+
+        <!-- Register -->
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="endpoint-method method-post">POST</span>
+            <span class="endpoint-path">/api/auth/register</span>
+            <span class="endpoint-summary">Register a new user</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="endpoint-body">
+            <p style="font-size:14px;color:var(--gray-600);margin-bottom:12px">Creates a new user account and returns a JWT token.</p>
+            <div class="label">Request Body</div>
+            <div class="code-block">{
+  <span class="key">"email"</span>: <span class="string">"jane@example.com"</span>,
+  <span class="key">"password"</span>: <span class="string">"securepassword123"</span>,
+  <span class="key">"full_name"</span>: <span class="string">"Jane Doe"</span>
+}</div>
+            <div class="label">Response Codes</div>
+            <div class="response-codes">
+              <span class="response-code response-2xx">201 Created</span>
+              <span class="response-code response-4xx">400 Validation Error</span>
+              <span class="response-code response-4xx">409 Email Exists</span>
+            </div>
+            <div class="label">Success Response (201)</div>
+            <div class="code-block">{
+  <span class="key">"success"</span>: <span class="bool">true</span>,
+  <span class="key">"data"</span>: {
+    <span class="key">"token"</span>: <span class="string">"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."</span>,
+    <span class="key">"user"</span>: {
+      <span class="key">"id"</span>: <span class="string">"550e8400-e29b-41d4-a716-446655440000"</span>,
+      <span class="key">"email"</span>: <span class="string">"jane@example.com"</span>,
+      <span class="key">"full_name"</span>: <span class="string">"Jane Doe"</span>
+    }
+  }
+}</div>
+          </div>
+        </div>
+
+        <!-- Login -->
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="endpoint-method method-post">POST</span>
+            <span class="endpoint-path">/api/auth/login</span>
+            <span class="endpoint-summary">Login with email and password</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="endpoint-body">
+            <div class="label">Request Body</div>
+            <div class="code-block">{
+  <span class="key">"email"</span>: <span class="string">"jane@example.com"</span>,
+  <span class="key">"password"</span>: <span class="string">"securepassword123"</span>
+}</div>
+            <div class="label">Response Codes</div>
+            <div class="response-codes">
+              <span class="response-code response-2xx">200 OK</span>
+              <span class="response-code response-4xx">400 Bad Request</span>
+              <span class="response-code response-4xx">401 Invalid Credentials</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Profile Endpoints -->
+      <section class="section" id="profile-endpoints">
+        <h2 class="section-title">Profile</h2>
+        <p class="section-desc">User profile and skills management. All endpoints require authentication.</p>
+
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="endpoint-method method-get">GET</span>
+            <span class="endpoint-path">/api/users/profile</span>
+            <span class="endpoint-summary">Get current user's profile</span>
+            <span class="auth-badge">🔑 Auth Required</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="endpoint-body">
+            <div class="label">Response Codes</div>
+            <div class="response-codes">
+              <span class="response-code response-2xx">200 OK</span>
+              <span class="response-code response-4xx">401 Unauthorized</span>
+            </div>
+            <div class="label">Success Response (200)</div>
+            <div class="code-block">{
+  <span class="key">"success"</span>: <span class="bool">true</span>,
+  <span class="key">"data"</span>: {
+    <span class="key">"id"</span>: <span class="string">"profile-uuid"</span>,
+    <span class="key">"headline"</span>: <span class="string">"Senior Software Engineer"</span>,
+    <span class="key">"summary"</span>: <span class="string">"Experienced backend engineer..."</span>,
+    <span class="key">"location_city"</span>: <span class="string">"San Francisco"</span>,
+    <span class="key">"location_country"</span>: <span class="string">"US"</span>,
+    <span class="key">"years_of_experience"</span>: <span class="number">5.5</span>,
+    <span class="key">"is_open_to_work"</span>: <span class="bool">true</span>,
+    <span class="key">"profile_completeness"</span>: <span class="number">85</span>
+  }
+}</div>
+          </div>
+        </div>
+
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="endpoint-method method-put">PUT</span>
+            <span class="endpoint-path">/api/users/profile</span>
+            <span class="endpoint-summary">Update current user's profile</span>
+            <span class="auth-badge">🔑 Auth Required</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="endpoint-body">
+            <div class="label">Request Body (all fields optional)</div>
+            <div class="code-block">{
+  <span class="key">"headline"</span>: <span class="string">"Senior Software Engineer"</span>,
+  <span class="key">"summary"</span>: <span class="string">"Experienced backend engineer..."</span>,
+  <span class="key">"location_city"</span>: <span class="string">"San Francisco"</span>,
+  <span class="key">"location_country"</span>: <span class="string">"US"</span>,
+  <span class="key">"is_open_to_work"</span>: <span class="bool">true</span>
+}</div>
+          </div>
+        </div>
+
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="endpoint-method method-get">GET</span>
+            <span class="endpoint-path">/api/profile/skills</span>
+            <span class="endpoint-summary">Get current user's skills</span>
+            <span class="auth-badge">🔑 Auth Required</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="endpoint-body">
+            <div class="label">Success Response (200)</div>
+            <div class="code-block">{
+  <span class="key">"success"</span>: <span class="bool">true</span>,
+  <span class="key">"data"</span>: {
+    <span class="key">"skills"</span>: [
+      {
+        <span class="key">"skill_name"</span>: <span class="string">"Go"</span>,
+        <span class="key">"proficiency"</span>: <span class="string">"advanced"</span>,
+        <span class="key">"years_of_experience"</span>: <span class="number">4</span>,
+        <span class="key">"is_primary"</span>: <span class="bool">true</span>
+      }
+    ]
+  }
+}</div>
+          </div>
+        </div>
+
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="endpoint-method method-put">PUT</span>
+            <span class="endpoint-path">/api/profile/skills</span>
+            <span class="endpoint-summary">Update current user's skills</span>
+            <span class="auth-badge">🔑 Auth Required</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="endpoint-body">
+            <div class="label">Request Body</div>
+            <div class="code-block">{
+  <span class="key">"skills"</span>: [
+    {
+      <span class="key">"name"</span>: <span class="string">"Go"</span>,
+      <span class="key">"proficiency"</span>: <span class="string">"advanced"</span>,
+      <span class="key">"years_of_experience"</span>: <span class="number">4</span>,
+      <span class="key">"is_primary"</span>: <span class="bool">true</span>
+    }
+  ]
+}</div>
+            <div class="info-box">Proficiency values: <code>beginner</code>, <code>intermediate</code>, <code>advanced</code>, <code>expert</code></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Resume Endpoints -->
+      <section class="section" id="resume-endpoints">
+        <h2 class="section-title">Resume</h2>
+        <p class="section-desc">Resume upload and parsing. Requires authentication.</p>
+
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="endpoint-method method-post">POST</span>
+            <span class="endpoint-path">/api/resume/upload</span>
+            <span class="endpoint-summary">Upload and parse a resume</span>
+            <span class="auth-badge">🔑 Auth Required</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="endpoint-body">
+            <div class="info-box">Content-Type: <code>multipart/form-data</code> · Max file size: 10MB · Formats: PDF, DOCX</div>
+            <div class="label">Form Fields</div>
+            <table>
+              <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+              <tr><td><code>resume</code></td><td>file</td><td>✓</td><td>PDF or DOCX resume file</td></tr>
+            </table>
+            <div class="label">Response Codes</div>
+            <div class="response-codes">
+              <span class="response-code response-2xx">200 OK</span>
+              <span class="response-code response-4xx">400 Bad Request</span>
+              <span class="response-code response-4xx">401 Unauthorized</span>
+              <span class="response-code response-4xx">422 Parse Error</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Jobs Endpoints -->
+      <section class="section" id="jobs-endpoints">
+        <h2 class="section-title">Jobs</h2>
+        <p class="section-desc">Job search, recommendations, and matching.</p>
+
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="endpoint-method method-post">POST</span>
+            <span class="endpoint-path">/api/jobs/search</span>
+            <span class="endpoint-summary">Search jobs with filters</span>
+            <span class="auth-badge">🔑 Auth Required</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="endpoint-body">
+            <div class="label">Request Body</div>
+            <div class="code-block">{
+  <span class="key">"query"</span>: <span class="string">"backend engineer"</span>,
+  <span class="key">"skills"</span>: [<span class="string">"Go"</span>, <span class="string">"PostgreSQL"</span>],
+  <span class="key">"location_type"</span>: <span class="string">"remote"</span>,
+  <span class="key">"experience_level"</span>: <span class="string">"senior"</span>,
+  <span class="key">"limit"</span>: <span class="number">20</span>,
+  <span class="key">"offset"</span>: <span class="number">0</span>
+}</div>
+          </div>
+        </div>
+
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="endpoint-method method-get">GET</span>
+            <span class="endpoint-path">/api/jobs/recommendations</span>
+            <span class="endpoint-summary">Get recommended jobs for current user</span>
+            <span class="auth-badge">🔑 Auth Required</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="endpoint-body">
+            <p style="font-size:14px;color:var(--gray-600)">Returns jobs ranked by acceptance likelihood based on the user's profile.</p>
+          </div>
+        </div>
+
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="endpoint-method method-get">GET</span>
+            <span class="endpoint-path">/api/jobs/{id}</span>
+            <span class="endpoint-summary">Get job details</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="endpoint-body">
+            <div class="label">Path Parameters</div>
+            <table>
+              <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+              <tr><td><code>id</code></td><td>string</td><td>Job UUID</td></tr>
+            </table>
+          </div>
+        </div>
+
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="endpoint-method method-get">GET</span>
+            <span class="endpoint-path">/api/jobs/{id}/match</span>
+            <span class="endpoint-summary">Get acceptance likelihood for a job</span>
+            <span class="auth-badge">🔑 Auth Required</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="endpoint-body">
+            <div class="label">Success Response (200)</div>
+            <div class="code-block">{
+  <span class="key">"success"</span>: <span class="bool">true</span>,
+  <span class="key">"data"</span>: {
+    <span class="key">"acceptance_likelihood"</span>: <span class="number">78</span>,
+    <span class="key">"breakdown"</span>: {
+      <span class="key">"skill_match"</span>: <span class="number">0.85</span>,
+      <span class="key">"experience_match"</span>: <span class="number">0.80</span>,
+      <span class="key">"education_match"</span>: <span class="number">0.90</span>,
+      <span class="key">"location_fit"</span>: <span class="number">1.0</span>,
+      <span class="key">"industry_relevance"</span>: <span class="number">0.70</span>
+    },
+    <span class="key">"matched_skills"</span>: [<span class="string">"Go"</span>, <span class="string">"PostgreSQL"</span>],
+    <span class="key">"missing_required_skills"</span>: [<span class="string">"Docker"</span>]
+  }
+}</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Analysis Endpoints -->
+      <section class="section" id="analysis-endpoints">
+        <h2 class="section-title">Analysis</h2>
+        <p class="section-desc">Skill gap analysis. Requires authentication.</p>
+
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="endpoint-method method-post">POST</span>
+            <span class="endpoint-path">/api/analysis/gaps</span>
+            <span class="endpoint-summary">Analyze skill gaps for a target job</span>
+            <span class="auth-badge">🔑 Auth Required</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="endpoint-body">
+            <div class="label">Request Body (by job ID)</div>
+            <div class="code-block">{ <span class="key">"job_id"</span>: <span class="string">"job-001"</span> }</div>
+            <div class="label">Request Body (inline job)</div>
+            <div class="code-block">{
+  <span class="key">"job"</span>: {
+    <span class="key">"title"</span>: <span class="string">"Senior Go Engineer"</span>,
+    <span class="key">"required_skills"</span>: [<span class="string">"Go"</span>, <span class="string">"PostgreSQL"</span>, <span class="string">"Docker"</span>],
+    <span class="key">"preferred_skills"</span>: [<span class="string">"Terraform"</span>, <span class="string">"AWS"</span>],
+    <span class="key">"min_years_experience"</span>: <span class="number">5</span>,
+    <span class="key">"experience_level"</span>: <span class="string">"senior"</span>
+  }
+}</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Training Endpoints -->
+      <section class="section" id="training-endpoints">
+        <h2 class="section-title">Training</h2>
+        <p class="section-desc">Personalized training recommendations. Requires authentication.</p>
+
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="endpoint-method method-get">GET</span>
+            <span class="endpoint-path">/api/training/recommendations</span>
+            <span class="endpoint-summary">Get personalized training plan</span>
+            <span class="auth-badge">🔑 Auth Required</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="endpoint-body">
+            <div class="label">Query Parameters</div>
+            <table>
+              <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+              <tr><td><code>job_id</code></td><td>string</td><td>Target job ID (optional)</td></tr>
+            </table>
+          </div>
+        </div>
+
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="endpoint-method method-post">POST</span>
+            <span class="endpoint-path">/api/training/recommendations</span>
+            <span class="endpoint-summary">Get training plan with preferences</span>
+            <span class="auth-badge">🔑 Auth Required</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="endpoint-body">
+            <div class="label">Request Body</div>
+            <div class="code-block">{
+  <span class="key">"job_id"</span>: <span class="string">"job-001"</span>,
+  <span class="key">"preferences"</span>: {
+    <span class="key">"prefer_free"</span>: <span class="bool">false</span>,
+    <span class="key">"max_budget_usd"</span>: <span class="number">100</span>,
+    <span class="key">"weekly_hours_available"</span>: <span class="number">10</span>,
+    <span class="key">"prefer_hands_on"</span>: <span class="bool">true</span>,
+    <span class="key">"prefer_certificates"</span>: <span class="bool">false</span>
+  }
+}</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Resources Endpoints -->
+      <section class="section" id="resources-endpoints">
+        <h2 class="section-title">Resources</h2>
+        <p class="section-desc">Search the curated learning resource catalog. No authentication required.</p>
+
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="endpoint-method method-get">GET</span>
+            <span class="endpoint-path">/api/resources/search</span>
+            <span class="endpoint-summary">Search learning resources</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="endpoint-body">
+            <div class="label">Query Parameters</div>
+            <table>
+              <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+              <tr><td><code>skill</code></td><td>string</td><td>Filter by skill name</td></tr>
+              <tr><td><code>type</code></td><td>string</td><td><code>course</code>, <code>certification</code>, <code>documentation</code>, <code>video</code>, <code>book</code>, <code>practice</code>, <code>article</code>, <code>project</code></td></tr>
+              <tr><td><code>difficulty</code></td><td>string</td><td><code>beginner</code>, <code>intermediate</code>, <code>advanced</code>, <code>expert</code>, <code>all_levels</code></td></tr>
+              <tr><td><code>free</code></td><td>boolean</td><td>Return only free resources</td></tr>
+              <tr><td><code>has_certificate</code></td><td>boolean</td><td>Return only resources with certificates</td></tr>
+              <tr><td><code>min_rating</code></td><td>number</td><td>Minimum rating (0.0–5.0)</td></tr>
+              <tr><td><code>limit</code></td><td>integer</td><td>Results per page (default: 20)</td></tr>
+              <tr><td><code>offset</code></td><td>integer</td><td>Pagination offset</td></tr>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Health Endpoints -->
+      <section class="section" id="health-endpoints">
+        <h2 class="section-title">Health</h2>
+
+        <div class="endpoint">
+          <div class="endpoint-header" onclick="toggleEndpoint(this)">
+            <span class="endpoint-method method-get">GET</span>
+            <span class="endpoint-path">/health</span>
+            <span class="endpoint-summary">Service health check</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="endpoint-body">
+            <div class="label">Success Response (200)</div>
+            <div class="code-block">{
+  <span class="key">"status"</span>: <span class="string">"ok"</span>,
+  <span class="key">"service"</span>: <span class="string">"api-gateway"</span>,
+  <span class="key">"version"</span>: <span class="string">"1.0.0"</span>
+}</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Error Codes -->
+      <section class="section" id="errors">
+        <h2 class="section-title">Error Codes</h2>
+        <table class="error-table">
+          <tr><th>HTTP Status</th><th>Error Code</th><th>Description</th></tr>
+          <tr><td>400</td><td><code>VALIDATION_ERROR</code></td><td>Request body failed validation</td></tr>
+          <tr><td>400</td><td><code>INVALID_REQUEST</code></td><td>Malformed JSON or missing required fields</td></tr>
+          <tr><td>401</td><td><code>UNAUTHORIZED</code></td><td>Missing or invalid Authorization header</td></tr>
+          <tr><td>401</td><td><code>TOKEN_EXPIRED</code></td><td>JWT token has expired</td></tr>
+          <tr><td>401</td><td><code>INVALID_CREDENTIALS</code></td><td>Wrong email or password</td></tr>
+          <tr><td>403</td><td><code>FORBIDDEN</code></td><td>Not authorized for this resource</td></tr>
+          <tr><td>404</td><td><code>NOT_FOUND</code></td><td>Requested resource does not exist</td></tr>
+          <tr><td>409</td><td><code>CONFLICT</code></td><td>Resource already exists (e.g., duplicate email)</td></tr>
+          <tr><td>413</td><td><code>FILE_TOO_LARGE</code></td><td>Uploaded file exceeds 10MB limit</td></tr>
+          <tr><td>422</td><td><code>PARSE_ERROR</code></td><td>Resume file could not be parsed</td></tr>
+          <tr><td>429</td><td><code>RATE_LIMIT_EXCEEDED</code></td><td>Too many requests</td></tr>
+          <tr><td>500</td><td><code>INTERNAL_ERROR</code></td><td>Unexpected server error</td></tr>
+          <tr><td>503</td><td><code>SERVICE_UNAVAILABLE</code></td><td>Downstream service unavailable</td></tr>
+        </table>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  function toggleEndpoint(header) {
+    const body = header.nextElementSibling;
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    header.classList.toggle('open', !isOpen);
+  }
+</script>
+</body>
+</html>
