@@ -661,6 +661,12 @@ var builtinCatalog = []ResourceEntry{
 	},
 }
 
+// GetCatalog returns the built-in resource catalog.
+// This allows external packages to access the catalog for resource search.
+func GetCatalog() []ResourceEntry {
+	return builtinCatalog
+}
+
 // skillAliases maps common skill aliases to their canonical names in the catalog.
 var skillAliases = map[string]string{
 	"golang":     "go",

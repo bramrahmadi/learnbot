@@ -1,0 +1,380 @@
+{
+  "info": {
+    "name": "LearnBot API Gateway",
+    "description": "Complete API collection for the LearnBot career development platform.\n\n## Setup\n1. Set the `base_url` variable to your server URL (default: http://localhost:8090)\n2. Run 'Register User' to create an account\n3. The token is automatically saved to the `token` variable\n4. All authenticated requests will use this token automatically\n\n## Flow\n1. Register → Login → Get token\n2. Upload resume or manually set skills\n3. Search jobs or get recommendations\n4. Analyze skill gaps for a target job\n5. Get personalized training plan\n6. Search learning resources",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8090",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "job_id",
+      "value": "job-001",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.collectionVariables.set('token', data.token);",
+                  "    pm.test('Registration successful', () => pm.expect(pm.response.code).to.equal(201));",
+                  "    pm.test('Token received', () => pm.expect(data.token).to.be.a('string').and.not.empty);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"jane@example.com\",\n  \"password\": \"securepassword123\",\n  \"full_name\": \"Jane Doe\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/register",
+            "description": "Register a new user account. The JWT token is automatically saved to the `token` variable."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.collectionVariables.set('token', data.token);",
+                  "    pm.test('Login successful', () => pm.expect(pm.response.code).to.equal(200));",
+                  "    pm.test('Token received', () => pm.expect(data.token).to.be.a('string').and.not.empty);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"jane@example.com\",\n  \"password\": \"securepassword123\"\n}"
+            },
+            "url": "{{base_url}}/api/auth/login",
+            "description": "Login with email and password. The JWT token is automatically saved."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": "{{base_url}}/api/users/profile",
+            "description": "Get the current user's professional profile."
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"headline\": \"Senior Software Engineer\",\n  \"summary\": \"Experienced backend engineer with 5+ years in Go and Python.\",\n  \"location_city\": \"San Francisco\",\n  \"location_country\": \"US\",\n  \"linkedin_url\": \"https://linkedin.com/in/janedoe\",\n  \"github_url\": \"https://github.com/janedoe\",\n  \"years_of_experience\": 5,\n  \"is_open_to_work\": true\n}"
+            },
+            "url": "{{base_url}}/api/users/profile",
+            "description": "Update the current user's profile fields."
+          }
+        },
+        {
+          "name": "Get Skills",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": "{{base_url}}/api/profile/skills",
+            "description": "Get the current user's skills list."
+          }
+        },
+        {
+          "name": "Update Skills",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skills\": [\n    {\"name\": \"Go\", \"proficiency\": \"advanced\", \"years_of_experience\": 4, \"is_primary\": true},\n    {\"name\": \"Python\", \"proficiency\": \"intermediate\", \"years_of_experience\": 2},\n    {\"name\": \"PostgreSQL\", \"proficiency\": \"intermediate\", \"years_of_experience\": 3},\n    {\"name\": \"Docker\", \"proficiency\": \"beginner\"},\n    {\"name\": \"Git\", \"proficiency\": \"advanced\"}\n  ]\n}"
+            },
+            "url": "{{base_url}}/api/profile/skills",
+            "description": "Replace the user's skill list with the provided skills."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Resume",
+      "item": [
+        {
+          "name": "Upload Resume",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "resume",
+                  "type": "file",
+                  "description": "Select a PDF or DOCX resume file"
+                }
+              ]
+            },
+            "url": "{{base_url}}/api/resume/upload",
+            "description": "Upload a PDF or DOCX resume. The file is parsed and skills are automatically extracted and saved to the user's profile."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jobs",
+      "item": [
+        {
+          "name": "Search Jobs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"backend engineer\",\n  \"skills\": [\"Go\"],\n  \"location_type\": \"remote\",\n  \"limit\": 20,\n  \"offset\": 0\n}"
+            },
+            "url": "{{base_url}}/api/jobs/search",
+            "description": "Search jobs with optional filters."
+          }
+        },
+        {
+          "name": "Get Job Recommendations",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": "{{base_url}}/api/jobs/recommendations",
+            "description": "Get jobs ranked by acceptance likelihood based on the current user's profile."
+          }
+        },
+        {
+          "name": "Get Job Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/jobs/{{job_id}}",
+            "description": "Get full details for a specific job."
+          }
+        },
+        {
+          "name": "Get Job Match Score",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": "{{base_url}}/api/jobs/{{job_id}}/match",
+            "description": "Calculate the acceptance likelihood score for the current user vs a specific job."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gap Analysis",
+      "item": [
+        {
+          "name": "Analyze Gaps (by Job ID)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_id\": \"{{job_id}}\"\n}"
+            },
+            "url": "{{base_url}}/api/analysis/gaps",
+            "description": "Analyze skill gaps between the current user's profile and a job from the catalog."
+          }
+        },
+        {
+          "name": "Analyze Gaps (inline job)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job\": {\n    \"title\": \"Senior Go Engineer\",\n    \"required_skills\": [\"Go\", \"PostgreSQL\", \"Docker\", \"Kubernetes\"],\n    \"preferred_skills\": [\"Terraform\", \"AWS\"],\n    \"min_years_experience\": 5,\n    \"experience_level\": \"senior\"\n  }\n}"
+            },
+            "url": "{{base_url}}/api/analysis/gaps",
+            "description": "Analyze skill gaps against an inline job description."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Training",
+      "item": [
+        {
+          "name": "Get Training Plan (GET)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": {
+              "raw": "{{base_url}}/api/training/recommendations?job_id={{job_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "training", "recommendations"],
+              "query": [{"key": "job_id", "value": "{{job_id}}"}]
+            },
+            "description": "Get a personalized training plan for a target job."
+          }
+        },
+        {
+          "name": "Get Training Plan (POST with preferences)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job_id\": \"{{job_id}}\",\n  \"preferences\": {\n    \"prefer_free\": false,\n    \"max_budget_usd\": 100,\n    \"weekly_hours_available\": 10,\n    \"prefer_hands_on\": true,\n    \"prefer_certificates\": false,\n    \"target_date\": \"2025-09-01\"\n  }\n}"
+            },
+            "url": "{{base_url}}/api/training/recommendations",
+            "description": "Get a personalized training plan with custom learning preferences."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Resources",
+      "item": [
+        {
+          "name": "Search All Resources",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/api/resources/search",
+            "description": "Search all learning resources (no auth required)."
+          }
+        },
+        {
+          "name": "Search by Skill",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/resources/search?skill=Python",
+              "host": ["{{base_url}}"],
+              "path": ["api", "resources", "search"],
+              "query": [{"key": "skill", "value": "Python"}]
+            },
+            "description": "Search resources for a specific skill."
+          }
+        },
+        {
+          "name": "Search Free Resources",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/resources/search?free=true&has_hands_on=true",
+              "host": ["{{base_url}}"],
+              "path": ["api", "resources", "search"],
+              "query": [
+                {"key": "free", "value": "true"},
+                {"key": "has_hands_on", "value": "true"}
+              ]
+            },
+            "description": "Search for free resources with hands-on exercises."
+          }
+        },
+        {
+          "name": "Search Certifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/resources/search?type=certification&skill=AWS",
+              "host": ["{{base_url}}"],
+              "path": ["api", "resources", "search"],
+              "query": [
+                {"key": "type", "value": "certification"},
+                {"key": "skill", "value": "AWS"}
+              ]
+            },
+            "description": "Search for AWS certifications."
+          }
+        },
+        {
+          "name": "Full-text Search",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/resources/search?q=machine+learning&min_rating=4.5",
+              "host": ["{{base_url}}"],
+              "path": ["api", "resources", "search"],
+              "query": [
+                {"key": "q", "value": "machine learning"},
+                {"key": "min_rating", "value": "4.5"}
+              ]
+            },
+            "description": "Full-text search for machine learning resources with high ratings."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/health",
+            "description": "Check if the API gateway is running."
+          }
+        }
+      ]
+    }
+  ]
+}
