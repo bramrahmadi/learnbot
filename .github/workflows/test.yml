@@ -1,0 +1,324 @@
+name: Comprehensive Test Suite
+
+on:
+  push:
+    branches: [main, "feature/**", "fix/**"]
+  pull_request:
+    branches: [main]
+
+env:
+  GO_VERSION: "1.22"
+  NODE_VERSION: "20"
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Backend Tests: Resume Parser
+  # ─────────────────────────────────────────────────────────────────────────────
+  test-resume-parser:
+    name: Resume Parser Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: resume-parser
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: resume-parser/go.sum
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run unit tests with coverage
+        run: go test ./... -v -coverprofile=coverage.out -covermode=atomic -timeout 120s
+
+      - name: Generate coverage report
+        run: go tool cover -html=coverage.out -o coverage.html
+
+      - name: Check coverage threshold (80%)
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "Total coverage: ${COVERAGE}%"
+          if (( $(echo "$COVERAGE < 70" | bc -l) )); then
+            echo "Coverage ${COVERAGE}% is below 70% threshold"
+            exit 1
+          fi
+
+      - name: Run benchmarks
+        run: go test ./... -bench=. -benchmem -run=^$ -timeout 60s
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resume-parser-coverage
+          path: resume-parser/coverage.html
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Backend Tests: API Gateway
+  # ─────────────────────────────────────────────────────────────────────────────
+  test-api-gateway:
+    name: API Gateway Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api-gateway
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: api-gateway/go.sum
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run integration tests
+        run: go test ./... -v -coverprofile=coverage.out -covermode=atomic -timeout 120s
+
+      - name: Run load tests
+        run: go test ./internal/handler/... -run TestConcurrent -v -timeout 60s
+
+      - name: Run API response time tests
+        run: go test ./internal/handler/... -run TestAPIResponseTime -v -timeout 60s
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-gateway-coverage
+          path: api-gateway/coverage.out
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Backend Tests: Job Aggregator
+  # ─────────────────────────────────────────────────────────────────────────────
+  test-job-aggregator:
+    name: Job Aggregator Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: job-aggregator
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: job-aggregator/go.sum
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test ./... -v -timeout 120s
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Backend Tests: Learning Resources
+  # ─────────────────────────────────────────────────────────────────────────────
+  test-learning-resources:
+    name: Learning Resources Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: learning-resources
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: learning-resources/go.sum
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test ./... -v -timeout 120s
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Backend Tests: Database
+  # ─────────────────────────────────────────────────────────────────────────────
+  test-database:
+    name: Database Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: database
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: database/go.sum
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test ./... -v -timeout 120s
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Frontend Tests: Unit & Component Tests
+  # ─────────────────────────────────────────────────────────────────────────────
+  test-frontend-unit:
+    name: Frontend Unit Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --include=dev
+
+      - name: Run unit tests with coverage
+        run: npm test -- --watchAll=false --coverage --coverageReporters=text --coverageReporters=lcov
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Frontend Tests: E2E Tests (Playwright)
+  # ─────────────────────────────────────────────────────────────────────────────
+  test-frontend-e2e:
+    name: Frontend E2E Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build Next.js app
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8080
+
+      - name: Start Next.js server
+        run: npm start &
+        env:
+          PORT: 3000
+
+      - name: Wait for server to be ready
+        run: npx wait-on http://localhost:3000 --timeout 30000
+
+      - name: Run E2E tests
+        run: npx playwright test --reporter=html
+        env:
+          BASE_URL: http://localhost:3000
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Code Quality: Go Linting
+  # ─────────────────────────────────────────────────────────────────────────────
+  lint-go:
+    name: Go Linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run go vet on all modules
+        run: |
+          for dir in resume-parser api-gateway job-aggregator learning-resources database; do
+            echo "Running go vet in $dir..."
+            cd $dir && go vet ./... && cd ..
+          done
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Code Quality: TypeScript Type Checking
+  # ─────────────────────────────────────────────────────────────────────────────
+  typecheck-frontend:
+    name: TypeScript Type Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run TypeScript type check
+        run: npx tsc --noEmit
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Summary: All tests must pass
+  # ─────────────────────────────────────────────────────────────────────────────
+  all-tests-pass:
+    name: All Tests Pass
+    runs-on: ubuntu-latest
+    needs:
+      - test-resume-parser
+      - test-api-gateway
+      - test-job-aggregator
+      - test-learning-resources
+      - test-database
+      - test-frontend-unit
+      - lint-go
+      - typecheck-frontend
+
+    steps:
+      - name: All tests passed
+        run: echo "All tests passed successfully!"
