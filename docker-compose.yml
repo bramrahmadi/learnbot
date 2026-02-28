@@ -160,8 +160,10 @@ services:
 
   learning-resources:
     build:
-      context: ./learning-resources
-      dockerfile: Dockerfile
+      # Use repo root as context because go.mod has a replace directive
+      # pointing to ../database
+      context: .
+      dockerfile: learning-resources/Dockerfile
     container_name: learnbot-learning-resources
     restart: unless-stopped
     environment:

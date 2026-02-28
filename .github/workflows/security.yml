@@ -57,8 +57,10 @@ jobs:
           - name: job-aggregator
             context: ./job-aggregator
             dockerfile: job-aggregator/Dockerfile
+          # learning-resources uses repo root as context because go.mod has a
+          # replace directive pointing to ../database
           - name: learning-resources
-            context: ./learning-resources
+            context: .
             dockerfile: learning-resources/Dockerfile
           - name: frontend
             context: ./frontend
