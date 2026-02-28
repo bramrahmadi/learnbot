@@ -13,7 +13,8 @@ test.describe("Navigation", () => {
     await expect(page.getByText("Resume Analysis")).toBeVisible();
     await expect(page.getByText("Job Matching")).toBeVisible();
     await expect(page.getByText("Skill Gap Analysis")).toBeVisible();
-    await expect(page.getByText("Personalized Learning")).toBeVisible();
+    // Use heading role to avoid strict mode violation (text appears multiple times)
+    await expect(page.getByRole("heading", { name: "Personalized Learning" })).toBeVisible();
   });
 
   test("clicking Get started navigates to register", async ({ page }) => {
