@@ -1,0 +1,1169 @@
+openapi: 3.0.3
+info:
+  title: LearnBot API Gateway
+  description: |
+    The LearnBot API Gateway provides a unified REST API for the AI-powered career
+    development platform. It handles authentication, user profiles, job matching,
+    skill gap analysis, and personalized training recommendations.
+
+    ## Authentication
+    Most endpoints require a JWT Bearer token obtained via `/api/auth/login` or
+    `/api/auth/register`. Include it in the `Authorization` header:
+    ```
+    Authorization: Bearer <token>
+    ```
+
+    ## Rate Limiting
+    The API enforces a rate limit of 10 requests/second per IP with a burst of 30.
+    Exceeding the limit returns `429 Too Many Requests`.
+
+    ## Response Format
+    All responses follow a consistent envelope:
+    ```json
+    {
+      "success": true,
+      "data": { ... },
+      "meta": { "total": 100, "limit": 20, "offset": 0 }
+    }
+    ```
+    Error responses:
+    ```json
+    {
+      "success": false,
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "request validation failed",
+        "details": [{ "field": "email", "message": "must be a valid email" }]
+      }
+    }
+    ```
+  version: 1.0.0
+  contact:
+    name: LearnBot Team
+    url: https://github.com/bramrahmadi/LearnBot
+
+servers:
+  - url: http://localhost:8090
+    description: Local development server
+
+tags:
+  - name: Authentication
+    description: User registration and login
+  - name: Profile
+    description: User profile and skills management
+  - name: Resume
+    description: Resume upload and parsing
+  - name: Jobs
+    description: Job search and matching
+  - name: Analysis
+    description: Skill gap analysis
+  - name: Training
+    description: Personalized training recommendations
+  - name: Resources
+    description: Learning resource search
+
+paths:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Authentication
+  # ─────────────────────────────────────────────────────────────────────────────
+  /api/auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register a new user
+      description: Creates a new user account and returns a JWT token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              email: "jane@example.com"
+              password: "securepassword123"
+              full_name: "Jane Doe"
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+
+  /api/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Login with email and password
+      description: Authenticates a user and returns a JWT token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: "jane@example.com"
+              password: "securepassword123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Profile
+  # ─────────────────────────────────────────────────────────────────────────────
+  /api/users/profile:
+    get:
+      tags: [Profile]
+      summary: Get current user's profile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    put:
+      tags: [Profile]
+      summary: Update current user's profile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdateRequest'
+            example:
+              headline: "Senior Software Engineer"
+              summary: "Experienced backend engineer with 5+ years in Go and Python."
+              location_city: "San Francisco"
+              location_country: "US"
+              is_open_to_work: true
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/profile/skills:
+    get:
+      tags: [Profile]
+      summary: Get current user's skills
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Skills retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillsResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    put:
+      tags: [Profile]
+      summary: Update current user's skills
+      description: Replaces the user's skill list with the provided skills.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillUpdateRequest'
+            example:
+              skills:
+                - name: "Go"
+                  proficiency: "advanced"
+                  years_of_experience: 4
+                  is_primary: true
+                - name: "Python"
+                  proficiency: "intermediate"
+                  years_of_experience: 2
+      responses:
+        '200':
+          description: Skills updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillsResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Resume
+  # ─────────────────────────────────────────────────────────────────────────────
+  /api/resume/upload:
+    post:
+      tags: [Resume]
+      summary: Upload and parse a resume
+      description: |
+        Accepts a PDF or DOCX resume file, parses it, and stores the extracted data.
+        Also automatically updates the user's profile skills from the parsed resume.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                resume:
+                  type: string
+                  format: binary
+                  description: Resume file (PDF or DOCX, max 10MB)
+              required: [resume]
+      responses:
+        '200':
+          description: Resume parsed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResumeParseResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          description: Resume parsing failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Jobs
+  # ─────────────────────────────────────────────────────────────────────────────
+  /api/jobs/search:
+    post:
+      tags: [Jobs]
+      summary: Search jobs with filters
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobSearchRequest'
+            example:
+              query: "backend engineer"
+              skills: ["Go", "PostgreSQL"]
+              location_type: "remote"
+              experience_level: "senior"
+              limit: 20
+              offset: 0
+      responses:
+        '200':
+          description: Jobs retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobListResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/jobs/recommendations:
+    get:
+      tags: [Jobs]
+      summary: Get recommended jobs for current user
+      description: Returns jobs ranked by acceptance likelihood based on the user's profile.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Recommended jobs retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobListResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/jobs/{id}:
+    get:
+      tags: [Jobs]
+      summary: Get job details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "job-001"
+      responses:
+        '200':
+          description: Job details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDetailResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/jobs/{id}/match:
+    get:
+      tags: [Jobs]
+      summary: Get acceptance likelihood for a specific job
+      description: Calculates how well the current user's profile matches the job requirements.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "job-001"
+      responses:
+        '200':
+          description: Match score calculated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobMatchResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Analysis
+  # ─────────────────────────────────────────────────────────────────────────────
+  /api/analysis/gaps:
+    post:
+      tags: [Analysis]
+      summary: Analyze skill gaps for a target job
+      description: |
+        Compares the current user's skills against a job's requirements and
+        identifies missing skills categorized as critical, important, or nice-to-have.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GapAnalysisRequest'
+            examples:
+              byJobID:
+                summary: Analyze gaps for a specific job
+                value:
+                  job_id: "job-001"
+              inlineJob:
+                summary: Analyze gaps for an inline job description
+                value:
+                  job:
+                    title: "Senior Go Engineer"
+                    required_skills: ["Go", "PostgreSQL", "Docker", "Kubernetes"]
+                    preferred_skills: ["Terraform", "AWS"]
+                    min_years_experience: 5
+                    experience_level: "senior"
+      responses:
+        '200':
+          description: Gap analysis completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GapAnalysisResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Training
+  # ─────────────────────────────────────────────────────────────────────────────
+  /api/training/recommendations:
+    get:
+      tags: [Training]
+      summary: Get personalized training plan (GET)
+      description: Generates a learning plan for the current user targeting a specific job.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: job_id
+          in: query
+          schema:
+            type: string
+          example: "job-001"
+      responses:
+        '200':
+          description: Training plan generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingPlanResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    post:
+      tags: [Training]
+      summary: Get personalized training plan (POST with preferences)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainingRecommendationRequest'
+            example:
+              job_id: "job-001"
+              preferences:
+                prefer_free: false
+                max_budget_usd: 100
+                weekly_hours_available: 10
+                prefer_hands_on: true
+                prefer_certificates: false
+      responses:
+        '200':
+          description: Training plan generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingPlanResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Resources
+  # ─────────────────────────────────────────────────────────────────────────────
+  /api/resources/search:
+    get:
+      tags: [Resources]
+      summary: Search learning resources
+      description: |
+        Searches the built-in catalog of 60+ curated learning resources.
+        No authentication required.
+      parameters:
+        - name: skill
+          in: query
+          description: Filter by skill name (e.g. "Python", "Go")
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: Filter by resource type
+          schema:
+            type: string
+            enum: [course, certification, documentation, video, book, practice, article, project]
+        - name: difficulty
+          in: query
+          description: Filter by difficulty level
+          schema:
+            type: string
+            enum: [beginner, intermediate, advanced, expert, all_levels]
+        - name: free
+          in: query
+          description: Return only free resources
+          schema:
+            type: boolean
+        - name: has_certificate
+          in: query
+          description: Return only resources with certificates
+          schema:
+            type: boolean
+        - name: has_hands_on
+          in: query
+          description: Return only resources with hands-on exercises
+          schema:
+            type: boolean
+        - name: min_rating
+          in: query
+          description: Minimum rating (0.0-5.0)
+          schema:
+            type: number
+            minimum: 0
+            maximum: 5
+        - name: q
+          in: query
+          description: Full-text search query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of results (default 20, max 100)
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: offset
+          in: query
+          description: Pagination offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Resources retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceListResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # ─── Request schemas ───────────────────────────────────────────────────────
+    RegisterRequest:
+      type: object
+      required: [email, password, full_name]
+      properties:
+        email:
+          type: string
+          format: email
+          example: "jane@example.com"
+        password:
+          type: string
+          minLength: 8
+          example: "securepassword123"
+        full_name:
+          type: string
+          example: "Jane Doe"
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    ProfileUpdateRequest:
+      type: object
+      properties:
+        headline:
+          type: string
+          example: "Senior Software Engineer"
+        summary:
+          type: string
+        location_city:
+          type: string
+        location_country:
+          type: string
+        linkedin_url:
+          type: string
+          format: uri
+        github_url:
+          type: string
+          format: uri
+        website_url:
+          type: string
+          format: uri
+        years_of_experience:
+          type: number
+          minimum: 0
+        is_open_to_work:
+          type: boolean
+
+    SkillUpdateRequest:
+      type: object
+      required: [skills]
+      properties:
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkillInput'
+
+    SkillInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          example: "Go"
+        proficiency:
+          type: string
+          enum: [beginner, intermediate, advanced, expert]
+          example: "advanced"
+        years_of_experience:
+          type: number
+          minimum: 0
+        is_primary:
+          type: boolean
+
+    JobSearchRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        location_type:
+          type: string
+          enum: [remote, hybrid, on_site]
+        experience_level:
+          type: string
+          enum: [entry, mid, senior, lead, executive]
+        industry:
+          type: string
+        limit:
+          type: integer
+          default: 20
+          maximum: 100
+        offset:
+          type: integer
+          default: 0
+
+    GapAnalysisRequest:
+      type: object
+      properties:
+        job_id:
+          type: string
+          description: ID of a job in the catalog
+        job:
+          $ref: '#/components/schemas/JobRequirementsInput'
+
+    JobRequirementsInput:
+      type: object
+      required: [required_skills]
+      properties:
+        title:
+          type: string
+        required_skills:
+          type: array
+          items:
+            type: string
+        preferred_skills:
+          type: array
+          items:
+            type: string
+        min_years_experience:
+          type: number
+        required_degree_level:
+          type: string
+        location_type:
+          type: string
+        industry:
+          type: string
+        experience_level:
+          type: string
+
+    TrainingRecommendationRequest:
+      type: object
+      properties:
+        job_id:
+          type: string
+        job:
+          $ref: '#/components/schemas/JobRequirementsInput'
+        preferences:
+          $ref: '#/components/schemas/LearningPreferences'
+
+    LearningPreferences:
+      type: object
+      properties:
+        prefer_free:
+          type: boolean
+          default: false
+        max_budget_usd:
+          type: number
+          minimum: 0
+        weekly_hours_available:
+          type: number
+          default: 10
+        prefer_hands_on:
+          type: boolean
+          default: false
+        prefer_certificates:
+          type: boolean
+          default: false
+        target_date:
+          type: string
+          format: date
+          example: "2025-09-01"
+        preferred_resource_types:
+          type: array
+          items:
+            type: string
+            enum: [course, certification, documentation, video, book, practice]
+        excluded_providers:
+          type: array
+          items:
+            type: string
+
+    # ─── Response schemas ──────────────────────────────────────────────────────
+    AuthSuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+              description: JWT access token
+            expires_at:
+              type: string
+              format: date-time
+            user:
+              $ref: '#/components/schemas/UserInfo'
+
+    UserInfo:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        full_name:
+          type: string
+
+    ProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            user_id:
+              type: string
+            email:
+              type: string
+            full_name:
+              type: string
+            headline:
+              type: string
+            summary:
+              type: string
+            location_city:
+              type: string
+            location_country:
+              type: string
+            years_of_experience:
+              type: number
+            is_open_to_work:
+              type: boolean
+            skills:
+              type: array
+              items:
+                $ref: '#/components/schemas/SkillRecord'
+
+    SkillRecord:
+      type: object
+      properties:
+        name:
+          type: string
+        proficiency:
+          type: string
+        years_of_experience:
+          type: number
+        is_primary:
+          type: boolean
+
+    SkillsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            user_id:
+              type: string
+            skills:
+              type: array
+              items:
+                $ref: '#/components/schemas/SkillRecord'
+            count:
+              type: integer
+
+    ResumeParseResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            resume_id:
+              type: string
+            file_name:
+              type: string
+            parsed_at:
+              type: string
+              format: date-time
+            personal:
+              type: object
+            skills:
+              type: array
+            experience:
+              type: array
+            education:
+              type: array
+            certifications:
+              type: array
+            projects:
+              type: array
+            summary:
+              type: string
+
+    JobSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        company:
+          type: string
+        location_type:
+          type: string
+        experience_level:
+          type: string
+        required_skills:
+          type: array
+          items:
+            type: string
+        posted_at:
+          type: string
+        match_score:
+          type: number
+          description: Acceptance likelihood score [0-100] (only in recommendations)
+
+    JobListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/JobSummary'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    JobDetailResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          allOf:
+            - $ref: '#/components/schemas/JobSummary'
+            - type: object
+              properties:
+                description:
+                  type: string
+                preferred_skills:
+                  type: array
+                  items:
+                    type: string
+                min_years_experience:
+                  type: number
+                industry:
+                  type: string
+                salary_min:
+                  type: integer
+                salary_max:
+                  type: integer
+                salary_currency:
+                  type: string
+                apply_url:
+                  type: string
+
+    JobMatchResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            job_id:
+              type: string
+            overall_score:
+              type: number
+              description: Overall acceptance likelihood [0-100]
+            skill_match:
+              type: number
+              description: Skill match component [0-1]
+            experience_match:
+              type: number
+            education_match:
+              type: number
+            location_fit:
+              type: number
+            industry_match:
+              type: number
+            matched_skills:
+              type: array
+              items:
+                type: string
+            missing_skills:
+              type: array
+              items:
+                type: string
+            recommendation:
+              type: string
+              example: "Strong match – you're ready to apply!"
+
+    GapAnalysisResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            critical_gaps:
+              type: array
+              description: Must-have skills the candidate is missing
+            important_gaps:
+              type: array
+              description: Preferred skills the candidate is missing
+            nice_to_have_gaps:
+              type: array
+            total_gaps:
+              type: integer
+            critical_gap_count:
+              type: integer
+            important_gap_count:
+              type: integer
+            readiness_score:
+              type: number
+              description: Overall readiness score [0-100]
+            total_estimated_learning_hours:
+              type: integer
+            top_priority_gaps:
+              type: array
+            matched_skills:
+              type: array
+              items:
+                type: string
+            visual_data:
+              type: object
+
+    TrainingPlanResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            job_title:
+              type: string
+            readiness_score:
+              type: number
+            total_gaps:
+              type: integer
+            total_estimated_hours:
+              type: number
+            phases:
+              type: array
+              description: Ordered learning phases (Critical → Preferred → Nice-to-have)
+            timeline:
+              type: object
+              description: Week-by-week study schedule
+            matched_skills:
+              type: array
+              items:
+                type: string
+            summary:
+              type: object
+              properties:
+                headline:
+                  type: string
+                  example: "📚 3 critical gaps to close – estimated 8 weeks"
+                critical_gap_count:
+                  type: integer
+                free_resource_count:
+                  type: integer
+                paid_resource_count:
+                  type: integer
+                estimated_total_cost_usd:
+                  type: number
+                top_skills_to_learn:
+                  type: array
+                  items:
+                    type: string
+                quick_wins:
+                  type: array
+                  items:
+                    type: string
+
+    ResourceListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceEntry'
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    ResourceEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+          format: uri
+        provider:
+          type: string
+        resource_type:
+          type: string
+          enum: [course, certification, documentation, video, book, practice, article, project]
+        difficulty:
+          type: string
+          enum: [beginner, intermediate, advanced, expert, all_levels]
+        cost_type:
+          type: string
+          enum: [free, freemium, paid, subscription, free_audit]
+        cost_usd:
+          type: number
+        duration_hours:
+          type: number
+        duration_label:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        primary_skill:
+          type: string
+        rating:
+          type: number
+          minimum: 0
+          maximum: 5
+        rating_count:
+          type: integer
+        has_certificate:
+          type: boolean
+        has_hands_on:
+          type: boolean
+        is_verified:
+          type: boolean
+
+    ResponseMeta:
+      type: object
+      properties:
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "VALIDATION_ERROR"
+            message:
+              type: string
+              example: "request validation failed"
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string
+
+  responses:
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "VALIDATION_ERROR"
+              message: "request validation failed"
+              details:
+                - field: "email"
+                  message: "must be a valid email address"
+
+    UnauthorizedError:
+      description: Authentication required or token invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "UNAUTHORIZED"
+              message: "missing or invalid Authorization header"
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "NOT_FOUND"
+              message: "job not found"
+
+    ConflictError:
+      description: Resource already exists
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "EMAIL_TAKEN"
+              message: "an account with this email already exists"
