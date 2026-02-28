@@ -1,0 +1,30 @@
+environment = "staging"
+aws_region  = "us-east-1"
+
+# VPC
+vpc_cidr             = "10.0.0.0/16"
+availability_zones   = ["us-east-1a", "us-east-1b"]
+private_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24"]
+public_subnet_cidrs  = ["10.0.101.0/24", "10.0.102.0/24"]
+
+# ECS - smaller for staging
+api_gateway_cpu           = 256
+api_gateway_memory        = 512
+api_gateway_desired_count = 1
+api_gateway_min_count     = 1
+api_gateway_max_count     = 3
+
+resume_parser_cpu           = 512
+resume_parser_memory        = 1024
+resume_parser_desired_count = 1
+
+# Database - smaller for staging
+db_instance_class        = "db.t3.micro"
+db_allocated_storage     = 10
+db_max_allocated_storage = 20
+db_backup_retention_days = 3
+db_multi_az              = false
+
+# Monitoring
+alert_email        = "ops-staging@learnbot.example.com"
+log_retention_days = 14

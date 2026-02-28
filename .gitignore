@@ -1,0 +1,82 @@
+# ─── Environment & Secrets ───────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.env
+
+# ─── Terraform ───────────────────────────────────────────────────────────────
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.plan
+.terraform.lock.hcl
+infrastructure/terraform/.terraform/
+# Keep tfvars templates but not actual secrets
+# terraform.tfvars is intentionally NOT ignored (uses non-sensitive defaults)
+
+# ─── Go ──────────────────────────────────────────────────────────────────────
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+# Test binary
+*.test
+# Output of go coverage tool
+*.out
+coverage.html
+coverage.out
+
+# ─── Node.js / Frontend ──────────────────────────────────────────────────────
+node_modules/
+.next/
+out/
+dist/
+build/
+.npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+# Coverage
+coverage/
+lcov.info
+# Playwright
+playwright-report/
+test-results/
+
+# ─── Docker ──────────────────────────────────────────────────────────────────
+# Docker volumes (local dev)
+.docker/
+
+# ─── IDE & Editor ────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
+logs/
+/tmp/
+
+# ─── Certificates ────────────────────────────────────────────────────────────
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# ─── Backup files ────────────────────────────────────────────────────────────
+*.bak
+*.backup
+*.sql.gz
+/tmp/learnbot-*
+
+# ─── AWS ─────────────────────────────────────────────────────────────────────
+.aws/credentials

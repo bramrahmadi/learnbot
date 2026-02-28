@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: learnbot
+  labels:
+    app.kubernetes.io/name: learnbot
+    app.kubernetes.io/managed-by: kubectl

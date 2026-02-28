@@ -1,0 +1,261 @@
+version: "3.9"
+
+# ─── LearnBot Local Development Stack ────────────────────────────────────────
+# Usage:
+#   docker compose up -d          # start all services
+#   docker compose up -d postgres # start only the database
+#   docker compose logs -f api-gateway
+#   docker compose down -v        # stop and remove volumes
+
+networks:
+  learnbot:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+
+services:
+  # ─── Infrastructure ─────────────────────────────────────────────────────────
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: learnbot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: learnbot
+      POSTGRES_USER: learnbot_admin
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-localdevpassword}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - learnbot
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U learnbot_admin -d learnbot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: learnbot-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-localredispassword}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - learnbot
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD:-localredispassword}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Backend Services ────────────────────────────────────────────────────────
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: learnbot-api-gateway
+    restart: unless-stopped
+    environment:
+      PORT: "8090"
+      ENVIRONMENT: development
+      JWT_SECRET: ${JWT_SECRET:-local-dev-jwt-secret-change-in-production}
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: learnbot
+      DB_USER: learnbot_admin
+      DB_PASSWORD: ${DB_PASSWORD:-localdevpassword}
+      RESUME_PARSER_URL: http://resume-parser:8080
+      JOB_AGGREGATOR_URL: http://job-aggregator:8081
+      LEARNING_RESOURCES_URL: http://learning-resources:8082
+      REDIS_URL: redis://:${REDIS_PASSWORD:-localredispassword}@redis:6379/0
+    ports:
+      - "8090:8090"
+    networks:
+      - learnbot
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8090/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  resume-parser:
+    build:
+      context: ./resume-parser
+      dockerfile: Dockerfile
+    container_name: learnbot-resume-parser
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      ENVIRONMENT: development
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: learnbot
+      DB_USER: learnbot_admin
+      DB_PASSWORD: ${DB_PASSWORD:-localdevpassword}
+      UPLOAD_DIR: /tmp/uploads
+      MAX_FILE_SIZE_MB: "10"
+    ports:
+      - "8080:8080"
+    networks:
+      - learnbot
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  job-aggregator:
+    build:
+      context: ./job-aggregator
+      dockerfile: Dockerfile
+    container_name: learnbot-job-aggregator
+    restart: unless-stopped
+    environment:
+      PORT: "8081"
+      ENVIRONMENT: development
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: learnbot
+      DB_USER: learnbot_admin
+      DB_PASSWORD: ${DB_PASSWORD:-localdevpassword}
+      SCRAPE_INTERVAL_MINUTES: "60"
+    ports:
+      - "8081:8081"
+    networks:
+      - learnbot
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  learning-resources:
+    build:
+      context: ./learning-resources
+      dockerfile: Dockerfile
+    container_name: learnbot-learning-resources
+    restart: unless-stopped
+    environment:
+      PORT: "8082"
+      ENVIRONMENT: development
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: learnbot
+      DB_USER: learnbot_admin
+      DB_PASSWORD: ${DB_PASSWORD:-localdevpassword}
+    ports:
+      - "8082:8082"
+    networks:
+      - learnbot
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ─── Frontend ────────────────────────────────────────────────────────────────
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: runner
+    container_name: learnbot-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:8090
+    ports:
+      - "3000:3000"
+    networks:
+      - learnbot
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+
+  # ─── Monitoring ──────────────────────────────────────────────────────────────
+
+  prometheus:
+    image: prom/prometheus:v2.49.1
+    container_name: learnbot-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infrastructure/monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - learnbot
+
+  grafana:
+    image: grafana/grafana:10.3.1
+    container_name: learnbot-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: http://localhost:3001
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infrastructure/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3001:3000"
+    networks:
+      - learnbot
+    depends_on:
+      - prometheus
+
+  # ─── Reverse Proxy (local only) ──────────────────────────────────────────────
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: learnbot-nginx
+    restart: unless-stopped
+    volumes:
+      - ./infrastructure/nginx/nginx.local.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    networks:
+      - learnbot
+    depends_on:
+      - api-gateway
+      - frontend

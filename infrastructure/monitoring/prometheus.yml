@@ -1,0 +1,85 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: learnbot
+    environment: local
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# Load alert rules
+rule_files:
+  - "alerts.yml"
+
+scrape_configs:
+  # ─── Prometheus self-monitoring ─────────────────────────────────────────────
+  - job_name: prometheus
+    static_configs:
+      - targets: [localhost:9090]
+
+  # ─── LearnBot Services ──────────────────────────────────────────────────────
+  - job_name: api-gateway
+    static_configs:
+      - targets: [api-gateway:8090]
+    metrics_path: /metrics
+    scrape_interval: 15s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+      - target_label: service
+        replacement: api-gateway
+
+  - job_name: resume-parser
+    static_configs:
+      - targets: [resume-parser:8080]
+    metrics_path: /metrics
+    scrape_interval: 15s
+    relabel_configs:
+      - target_label: service
+        replacement: resume-parser
+
+  - job_name: job-aggregator
+    static_configs:
+      - targets: [job-aggregator:8081]
+    metrics_path: /metrics
+    scrape_interval: 15s
+    relabel_configs:
+      - target_label: service
+        replacement: job-aggregator
+
+  - job_name: learning-resources
+    static_configs:
+      - targets: [learning-resources:8082]
+    metrics_path: /metrics
+    scrape_interval: 15s
+    relabel_configs:
+      - target_label: service
+        replacement: learning-resources
+
+  # ─── PostgreSQL Exporter ────────────────────────────────────────────────────
+  - job_name: postgres
+    static_configs:
+      - targets: [postgres-exporter:9187]
+    relabel_configs:
+      - target_label: service
+        replacement: postgres
+
+  # ─── Node Exporter ──────────────────────────────────────────────────────────
+  - job_name: node
+    static_configs:
+      - targets: [node-exporter:9100]
+    relabel_configs:
+      - target_label: service
+        replacement: node
+
+  # ─── Nginx ──────────────────────────────────────────────────────────────────
+  - job_name: nginx
+    static_configs:
+      - targets: [nginx-exporter:9113]
+    relabel_configs:
+      - target_label: service
+        replacement: nginx
