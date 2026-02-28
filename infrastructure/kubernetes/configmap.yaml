@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: learnbot-config
+  namespace: learnbot
+data:
+  environment: "production"
+  db-host: "learnbot-postgres.learnbot.svc.cluster.local"
+  db-name: "learnbot"
+  log-level: "info"
+  log-format: "json"
