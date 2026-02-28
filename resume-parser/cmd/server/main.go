@@ -14,6 +14,7 @@ import (
 	"github.com/learnbot/resume-parser/internal/api"
 	"github.com/learnbot/resume-parser/internal/parser"
 	"github.com/learnbot/resume-parser/internal/scorer"
+	"github.com/learnbot/resume-parser/internal/taxonomy"
 )
 
 func main() {
@@ -25,10 +26,12 @@ func main() {
 	resumeParser := parser.NewResumeParser()
 	handler := api.NewHandler(resumeParser, logger)
 	scorerHandler := scorer.NewHandler(logger)
+	taxonomyHandler := taxonomy.NewHandler(logger)
 
 	mux := http.NewServeMux()
 	handler.RegisterRoutes(mux)
 	scorerHandler.RegisterRoutes(mux)
+	taxonomyHandler.RegisterRoutes(mux)
 
 	srv := &http.Server{
 		Addr:         *addr,
