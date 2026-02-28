@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/learnbot/resume-parser/internal/api"
+	"github.com/learnbot/resume-parser/internal/gapanalysis"
 	"github.com/learnbot/resume-parser/internal/parser"
 	"github.com/learnbot/resume-parser/internal/scorer"
 	"github.com/learnbot/resume-parser/internal/taxonomy"
@@ -27,11 +28,13 @@ func main() {
 	handler := api.NewHandler(resumeParser, logger)
 	scorerHandler := scorer.NewHandler(logger)
 	taxonomyHandler := taxonomy.NewHandler(logger)
+	gapAnalysisHandler := gapanalysis.NewHandler(logger)
 
 	mux := http.NewServeMux()
 	handler.RegisterRoutes(mux)
 	scorerHandler.RegisterRoutes(mux)
 	taxonomyHandler.RegisterRoutes(mux)
+	gapAnalysisHandler.RegisterRoutes(mux)
 
 	srv := &http.Server{
 		Addr:         *addr,
