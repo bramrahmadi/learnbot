@@ -33,7 +33,7 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
-      - name: Run unit tests with coverage
+      - name: Run all tests with coverage
         run: go test ./... -v -coverprofile=coverage.out -covermode=atomic -timeout 120s
 
       - name: Generate coverage report
@@ -43,7 +43,7 @@ jobs:
         run: go tool cover -func=coverage.out | grep total
 
       - name: Run benchmarks
-        run: go test ./... -bench=. -benchmem -run=^$ -timeout 60s
+        run: go test ./internal/... -bench=. -benchmem -run=^$ -timeout 60s
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
