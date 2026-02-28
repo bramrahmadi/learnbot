@@ -1,9 +1,10 @@
 # Multi-stage Dockerfile for LearnBot Frontend
-# Stage 1: Dependencies
+# Stage 1: Install ALL dependencies (including devDependencies for build)
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+# Install all deps (including devDependencies) needed for Next.js compilation
+RUN npm ci
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
@@ -13,7 +14,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Stage 3: Runner
+# Stage 3: Runner (production only)
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
