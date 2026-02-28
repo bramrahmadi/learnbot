@@ -1,7 +1,10 @@
 # ─── Build Stage ─────────────────────────────────────────────────────────────
-FROM golang:1.22-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 RUN apk add --no-cache git ca-certificates tzdata
+
+# Allow Go to auto-download the required toolchain version (go.mod requires 1.25)
+ENV GOTOOLCHAIN=auto
 
 WORKDIR /build
 
