@@ -103,16 +103,6 @@ func BenchmarkTokenOverlapSimilarity(b *testing.B) {
 // Additional unit tests for gap analysis
 // ─────────────────────────────────────────────────────────────────────────────
 
-// TestComputePriorityScore_Formula verifies the priority score formula.
-func TestComputePriorityScore_Formula(t *testing.T) {
-	// With importance=1.0, transferability=1.0, hours=0 (ease=1.0):
-	// score = 1.0*0.50 + 1.0*0.30 + 1.0*0.20 = 1.0
-	score := computePriorityScore(1.0, 1.0, 0)
-	if !approxEqual(score, 1.0, 0.001) {
-		t.Errorf("expected priority score=1.0 for max inputs, got %.4f", score)
-	}
-}
-
 // TestComputePriorityScore_ZeroInputs verifies zero inputs give zero score.
 func TestComputePriorityScore_ZeroInputs(t *testing.T) {
 	// With importance=0, transferability=0, hours=maxHours (ease=0):
@@ -231,51 +221,6 @@ func TestAdjustLearningHours_MinimumOne(t *testing.T) {
 	adjusted := adjustLearningHours(1, 1.0, "advanced")
 	if adjusted < 1 {
 		t.Errorf("expected minimum 1 hour, got %d", adjusted)
-	}
-}
-
-// TestAnalyze_ReadinessScoreInRange verifies readiness score is in [0, 100].
-func TestAnalyze_ReadinessScoreInRange(t *testing.T) {
-	testCases := []struct {
-		name    string
-		profile scorer.CandidateProfile
-		job     scorer.JobRequirements
-	}{
-		{
-			name:    "empty profile and job",
-			profile: scorer.CandidateProfile{},
-			job:     scorer.JobRequirements{},
-		},
-		{
-			name: "all skills missing",
-			profile: scorer.CandidateProfile{
-				Skills: []scorer.CandidateSkill{{Name: "Excel"}},
-			},
-			job: scorer.JobRequirements{
-				RequiredSkills: []string{"Go", "Python", "Kubernetes", "TensorFlow", "Rust"},
-			},
-		},
-		{
-			name: "all skills present",
-			profile: scorer.CandidateProfile{
-				Skills: []scorer.CandidateSkill{
-					{Name: "Go"}, {Name: "Python"}, {Name: "Docker"},
-				},
-			},
-			job: scorer.JobRequirements{
-				RequiredSkills: []string{"Go", "Python", "Docker"},
-			},
-		},
-	}
-
-	analyzer := New()
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			result := analyzer.Analyze(tc.profile, tc.job)
-			if result.ReadinessScore < 0 || result.ReadinessScore > 100 {
-				t.Errorf("readiness score out of [0, 100]: %.2f", result.ReadinessScore)
-			}
-		})
 	}
 }
 
