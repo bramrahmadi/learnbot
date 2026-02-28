@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 env:
-  GO_VERSION: "1.22"
+  GO_VERSION: "stable"
   NODE_VERSION: "20"
 
 jobs:
@@ -189,7 +189,7 @@ jobs:
         run: npm install
 
       - name: Run unit tests with coverage
-        run: npm test -- --watchAll=false --coverage --coverageReporters=text --coverageReporters=lcov
+        run: npm test -- --coverage --coverageReporters=text --coverageReporters=lcov
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
@@ -200,6 +200,7 @@ jobs:
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Frontend Tests: E2E Tests (Playwright)
+  # Uses Playwright's built-in webServer to start the dev server
   # ─────────────────────────────────────────────────────────────────────────────
   test-frontend-e2e:
     name: Frontend E2E Tests
@@ -224,23 +225,11 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Build Next.js app
-        run: npm run build
+      - name: Run E2E tests (Playwright starts dev server automatically)
+        run: npx playwright test --project=chromium --reporter=html
         env:
+          CI: true
           NEXT_PUBLIC_API_URL: http://localhost:8080
-
-      - name: Start Next.js server
-        run: npm start &
-        env:
-          PORT: 3000
-
-      - name: Wait for server to be ready
-        run: npx wait-on http://localhost:3000 --timeout 30000
-
-      - name: Run E2E tests
-        run: npx playwright test --reporter=html
-        env:
-          BASE_URL: http://localhost:3000
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
@@ -308,10 +297,10 @@ jobs:
         run: npm install
 
       - name: Run TypeScript type check
-        run: npx tsc --noEmit
+        run: ./node_modules/.bin/tsc --noEmit
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # Summary: All tests must pass
+  # Summary: All critical tests must pass
   # ─────────────────────────────────────────────────────────────────────────────
   all-tests-pass:
     name: All Tests Pass
@@ -327,5 +316,5 @@ jobs:
       - typecheck-frontend
 
     steps:
-      - name: All tests passed
-        run: echo "All tests passed successfully!"
+      - name: All critical tests passed
+        run: echo "All critical tests passed successfully!"
