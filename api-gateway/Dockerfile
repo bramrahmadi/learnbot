@@ -1,17 +1,24 @@
 # ─── Build Stage ─────────────────────────────────────────────────────────────
+# Build context must be the repository root (not api-gateway/) because
+# go.mod has a replace directive: github.com/learnbot/resume-parser => ../resume-parser
 FROM golang:1.24-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git ca-certificates tzdata
 
-WORKDIR /build
+WORKDIR /workspace
 
-# Cache dependencies
-COPY go.mod go.sum ./
+# Copy the resume-parser module first (required by replace directive)
+COPY resume-parser/go.mod resume-parser/go.sum ./resume-parser/
+COPY resume-parser/ ./resume-parser/
+
+# Cache api-gateway dependencies
+COPY api-gateway/go.mod api-gateway/go.sum ./api-gateway/
+WORKDIR /workspace/api-gateway
 RUN go mod download && go mod verify
 
-# Copy source and build
-COPY . .
+# Copy api-gateway source and build
+COPY api-gateway/ ./
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags="-w -s -X main.version=$(git describe --tags --always --dirty 2>/dev/null || echo dev)" \
     -o /api-gateway \
@@ -31,8 +38,5 @@ COPY --from=builder /api-gateway /api-gateway
 USER 65534:65534
 
 EXPOSE 8090
-
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    CMD ["/api-gateway", "-health-check"]
 
 ENTRYPOINT ["/api-gateway"]

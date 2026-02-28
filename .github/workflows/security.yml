@@ -46,23 +46,33 @@ jobs:
     strategy:
       matrix:
         service:
+          # api-gateway uses repo root as context because go.mod has a
+          # replace directive pointing to ../resume-parser
           - name: api-gateway
-            context: ./api-gateway
+            context: .
+            dockerfile: api-gateway/Dockerfile
           - name: resume-parser
             context: ./resume-parser
+            dockerfile: resume-parser/Dockerfile
           - name: job-aggregator
             context: ./job-aggregator
+            dockerfile: job-aggregator/Dockerfile
           - name: learning-resources
             context: ./learning-resources
+            dockerfile: learning-resources/Dockerfile
           - name: frontend
             context: ./frontend
+            dockerfile: frontend/Dockerfile
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Build Docker image for scanning
         run: |
-          docker build -t learnbot/${{ matrix.service.name }}:scan ${{ matrix.service.context }}
+          docker build \
+            -t learnbot/${{ matrix.service.name }}:scan \
+            -f ${{ matrix.service.dockerfile }} \
+            ${{ matrix.service.context }}
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master

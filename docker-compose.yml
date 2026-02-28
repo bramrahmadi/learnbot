@@ -64,8 +64,10 @@ services:
 
   api-gateway:
     build:
-      context: ./api-gateway
-      dockerfile: Dockerfile
+      # Use repo root as context because go.mod has a replace directive
+      # pointing to ../resume-parser
+      context: .
+      dockerfile: api-gateway/Dockerfile
     container_name: learnbot-api-gateway
     restart: unless-stopped
     environment:
